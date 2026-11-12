@@ -1,30 +1,17 @@
 package com.scc;
 
 import com.scc.dao.DatabaseInitializer;
-import com.scc.dao.UserDao;
-import com.scc.model.user;
-import com.scc.ui.AdminMenu;
 import com.scc.ui.Authentication;
-
-import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args){
-
+    public static void main(String[] args) {
+        // Initialize all SQLite database tables
         DatabaseInitializer.initialize();
 
-        Scanner scanner = new Scanner(System.in);
-        UserDao userDao = new UserDao();
+        System.out.println("Welcome to the Parish Management System!");
 
-        Authentication auth = new Authentication(userDao, scanner);
-        auth.start();
-        scanner.close();
-
-
-
+        // Launch the authentication menu loop
+        Authentication.showAuthMenu();
     }
-
-
-
 }

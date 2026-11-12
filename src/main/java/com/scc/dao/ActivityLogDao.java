@@ -1,65 +1,82 @@
 package com.scc.dao;
 
-import com.scc.dao.DatabaseConnection;
 import com.scc.model.ActivityLog;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ActivityLogDao {
-    public void logAction(int userId, String actionType, String description) {
-        String sql = "INSERT INTO activity_logs (user_id, action_type, description) VALUES (?, ?, ?)";
+
+    // Inserts a new log entry matching the table schema (action, details, log_timestamp)
+    public static void logAction(Integer userId, String action, String details) {
+        String sql = "INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, userId);
-            pstmt.setString(2, actionType);
-            pstmt.setString(3, description);
+
+            if (userId != null) {
+                pstmt.setInt(1, userId);
+            } else {
+                pstmt.setNull(1, java.sql.Types.INTEGER);
+            }
+            pstmt.setString(2, action);
+            pstmt.setString(3, details);
             pstmt.executeUpdate();
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error logging action: " + e.getMessage());
         }
     }
 
+    // Returns all recorded actions ordered by log_timestamp DESC
     public List<ActivityLog> getAllLogs() {
         List<ActivityLog> logs = new ArrayList<>();
-        String sql = "SELECT id, user_id, action_type, description, timestamp FROM activity_logs ORDER BY timestamp DESC";
+        String sql = "SELECT log_id, user_id, action, details, log_timestamp FROM activity_logs ORDER BY log_timestamp DESC";
+
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
             while (rs.next()) {
                 logs.add(new ActivityLog(
-                        rs.getInt("id"),
+                        rs.getInt("log_id"),
                         rs.getInt("user_id"),
-                        rs.getString("action_type"),
-                        rs.getString("description"),
-                        rs.getTimestamp("timestamp")
+                        rs.getString("action"),
+                        rs.getString("details"),
+                        rs.getString("log_timestamp")
                 ));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error fetching all logs: " + e.getMessage());
         }
         return logs;
     }
 
+    // Returns logs for a specific user ID ordered by log_timestamp DESC
     public List<ActivityLog> getLogsByUserId(int userId) {
         List<ActivityLog> logs = new ArrayList<>();
-        String sql = "SELECT id, user_id, action_type, description, timestamp FROM activity_logs WHERE user_id = ? ORDER BY timestamp DESC";
+        String sql = "SELECT log_id, user_id, action, details, log_timestamp FROM activity_logs WHERE user_id = ? ORDER BY log_timestamp DESC";
+
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
             pstmt.setInt(1, userId);
+
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     logs.add(new ActivityLog(
-                            rs.getInt("id"),
+                            rs.getInt("log_id"),
                             rs.getInt("user_id"),
-                            rs.getString("action_type"),
-                            rs.getString("description"),
-                            rs.getTimestamp("timestamp")
+                            rs.getString("action"),
+                            rs.getString("details"),
+                            rs.getString("log_timestamp")
                     ));
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error fetching logs by user ID: " + e.getMessage());
         }
         return logs;
     }
